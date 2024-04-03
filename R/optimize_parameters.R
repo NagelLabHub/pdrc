@@ -12,6 +12,7 @@
 #' @examples
 #' out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
 #' params <- optimize_parameters(out_data, model, c(40,0,0.1,0.01))
+#'
 optimize_parameters <- function(data, model_function, initial_params) {
   # Define the objective function internally
   objective <- function(params) {
@@ -24,7 +25,14 @@ optimize_parameters <- function(data, model_function, initial_params) {
   }
 
   # Call optim to optimize parameters
-  opt_result <- optim(initial_params, objective)
-  return(opt_result$par)
+  tryCatch({
+    opt_result <- optim(initial_params, objective)
+    return(opt_result$par)
+  }, error = function(e) {
+    # Print error message and exit function
+    message("Error in optim: ", e$message)
+    return(NULL)
+  })
 }
+
 
