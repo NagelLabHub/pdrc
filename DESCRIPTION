@@ -1,0 +1,18 @@
+Package: kinetics
+Title: Fit DNA Repair Kinetics Through Robust Optimization
+Version: 0.0.0.9001
+Authors@R: 
+    person("Ting", "Zhai", , "zhaiting96@outlook.com", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports:
+  tidyverse,
+  ggthemes,
+  minpack.lm
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
