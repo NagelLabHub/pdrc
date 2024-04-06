@@ -1,11 +1,11 @@
 Package: kinetics
-Title: A complex toolkit for processing and analyzing high-through put DNA repair data
+Title: A complex toolkit for processing and analyzing high-throughput DNA repair data
 Version: 1.0.0
 Authors@R: 
     person("Ting", "Zhai", , "zhaiting96@outlook.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: What the package does (one paragraph).
-License: MIT + file LICENSE
+License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
