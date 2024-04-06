@@ -1,6 +1,6 @@
 # 5. main model fitting process
 
-#' fit_model_and_stats
+#' biphasic_fit_nls
 #'
 #' @import minpack.lm
 #' @import ggthemes
@@ -10,7 +10,6 @@
 #' @importFrom stats coef optim predict residuals sd time uniroot
 #'
 #' @param data prepared data
-#' @param model_function model formula
 #' @param initial_params initial values for fitting
 #'
 #' @return a list of model fit par, estimates and plot
@@ -19,11 +18,14 @@
 #' @examples
 #' out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
 #' params <- c(40,0,0.1,0.01)
-#' result_list = fit_model_and_stats(out_data, model, params)
+#' result_list = biphasic_fit_nls(out_data, params)
 #'
-fit_model_and_stats <- function(data, model_function, initial_params) {
+biphasic_fit_nls <- function(data, initial_params) {
   # Fit the model using provided initial parameters
-  fit <- minpack.lm::nlsLM(F_t ~ model_function(time, F, S, k_f, k_s),
+  model <- function(t, F, S, k_f, k_s) {
+    F * exp(-k_f * t) + S * exp(-k_s * t)
+  }
+  fit <- minpack.lm::nlsLM(F_t ~ model(time, F, S, k_f, k_s),
                data = data, control = list(maxiter = 200),
                lower = c(F = 0, S = 0, k_f = 0, k_s = 0),
                start = list(F = initial_params[1],

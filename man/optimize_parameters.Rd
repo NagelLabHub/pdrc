@@ -4,12 +4,10 @@
 \alias{optimize_parameters}
 \title{optimize_parameters}
 \usage{
-optimize_parameters(data, model_function, initial_params)
+optimize_parameters(data, initial_params)
 }
 \arguments{
 \item{data}{prepared data with required time and F_t columns}
-
-\item{model_function}{model formula to be optimized}
 
 \item{initial_params}{a vector of numeric values; for biphasic exponential decay model input c(F, S, k_f, k_s)}
 }
@@ -21,6 +19,6 @@ optimize_parameters
 }
 \examples{
 out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
-params <- optimize_parameters(out_data, model, c(40,0,0.1,0.01))
+params <- optimize_parameters(out_data, c(40,0,0.1,0.01))
 
 }

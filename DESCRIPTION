@@ -1,5 +1,5 @@
 Package: kinetics
-Title: Fit DNA Repair Kinetics Through Robust Optimization
+Title: A complex toolkit for processing and analyzing high-through put DNA repair data
 Version: 1.0.0
 Authors@R: 
     person("Ting", "Zhai", , "zhaiting96@outlook.com", role = c("aut", "cre"),
@@ -13,6 +13,7 @@ Imports:
   magrittr,
   dplyr,
   minpack.lm,
+  brms,
   ggplot2,
   ggthemes
 Suggests: 
