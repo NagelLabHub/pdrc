@@ -16,7 +16,7 @@ a large list of result lists ordered by sample name
 biphasic_fit_bayesian
 }
 \examples{
-out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
-result_list <- biphasic_fit_bayesian(out_data)
+single_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
+result_list <- biphasic_fit_bayesian(single_data)
 
 }

@@ -1,4 +1,4 @@
-# 3. fine tuning for parameter estimation
+# 2. fine tuning for parameter estimation
 
 #' optimize_parameters
 #'

@@ -1,4 +1,4 @@
-# 4.half-life estimation for overall, fast, slow phases
+# 3. half-life estimation for overall, fast, slow phases
 
 #' calculate_half_life
 #'

@@ -1,4 +1,4 @@
-# 5. main model fitting process
+# 4. main model fitting process - non-linear least squares
 
 #' biphasic_fit_nls
 #'
@@ -16,9 +16,9 @@
 #' @export
 #'
 #' @examples
-#' out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
+#' single_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
 #' params <- c(40,0,0.1,0.01)
-#' result_list = biphasic_fit_nls(out_data, params)
+#' result_list = biphasic_fit_nls(single_data, params)
 #'
 biphasic_fit_nls <- function(data, initial_params) {
   # Fit the model using provided initial parameters

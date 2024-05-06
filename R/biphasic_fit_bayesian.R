@@ -1,4 +1,4 @@
-# Biphasic model fit by Bayesian inference
+# 4. main model fitting process - Bayesian inference
 
 #' biphasic_fit_bayesian
 #'
@@ -15,8 +15,8 @@
 #' @export
 #'
 #' @examples
-#' out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
-#' result_list <- biphasic_fit_bayesian(out_data)
+#' single_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
+#' result_list <- biphasic_fit_bayesian(single_data)
 #'
 biphasic_fit_bayesian <- function(data) {
   prior <- c(
@@ -62,7 +62,8 @@ half_life_overall <- half_life$overall
 half_life_fast <- half_life$fast_phase
 half_life_slow <- half_life$slow_phase
 
-waic <- waic(b_fit)$estimates["waic","Estimate"]
+loo <- loo(b_fit)
+looic <- loo$estimates["looic","Estimate"]
 
 new_data <- data.frame(time = seq(min(data$time), max(data$time), length.out = 1000))
 new_data$F_t_predicted <- predict(b_fit, newdata = new_data)[,1]
@@ -80,7 +81,7 @@ plot_object <- ggplot() +
   ggthemes::theme_few() +
   geom_line(data = new_data, aes(x = time, y = F_t_predicted), linetype = "dashed") + coord_cartesian(clip = "off") +
   scale_y_continuous(limits = c(0, 60)) +
-  annotate("text", x = Inf, y = Inf, label = sprintf("Sample: %s\nWAIC = %.2f\nt_half overall = %.2f\nt_half fast = %.2f\nt_half slow = %.2f", sample_name, waic, half_life_overall, half_life_fast, half_life_slow), hjust = 1.1, vjust = 2, size = 4, colour = "black")  +
+  annotate("text", x = Inf, y = Inf, label = sprintf("Sample: %s\nLOOIC = %.2f\nt_half overall = %.2f\nt_half fast = %.2f\nt_half slow = %.2f", sample_name, looic, half_life_overall, half_life_fast, half_life_slow), hjust = 1.1, vjust = 2, size = 4, colour = "black")  +
   xlab("Repair time (min)") +
   ylab("% DNA in tail \n (background corrected)")
 
@@ -88,7 +89,7 @@ plot_object <- ggplot() +
 return(list(b_fit = b_fit,
             params = c(F_fit, S_fit, k_f_fit, k_s_fit),
             half_life = half_life,
-            WAIC = waic,
+            loo = loo,
             plot_object = plot_object,
             sample_name = sample_name))
 }

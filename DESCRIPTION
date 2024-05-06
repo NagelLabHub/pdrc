@@ -1,4 +1,4 @@
-Package: kinetics
+Package: pdrc
 Title: A complex toolkit for processing and analyzing high-throughput DNA repair data
 Version: 1.0.0
 Authors@R: 
