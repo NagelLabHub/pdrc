@@ -23,8 +23,10 @@ batch_correction
 }
 \examples{
 dat_og <- data.frame(UG = c(0.05,0.08,0.10), NHEJ = c(23,16,19), HR = c(2,4,6))
-dat_std <- RE_to_zscore(dat_og, c("UG"))
-pheno <- data.frame(Sample = c("001","002","003"), age = c(34,36,57), sex = c("M","F","M"), batch = c("A","B","A"))
+list_std <- RE_to_zscore(dat_og, c("UG"))
+dat_std <- list_std$dataset_zscore
+pheno <- data.frame(Sample = c("001","002","003"),
+age = c(34,36,57), sex = c("M","F","M"), batch = c("A","B","A"))
 dataset_batch <- batch_correction(dat_std, pheno, batch="batch")
 
 }

@@ -18,8 +18,12 @@ RE_to_zscore <- function(dataset, var_inverse) {
   dataset_log <- log(dataset)
   dataset_log[, var_inverse] <- -dataset_log[, var_inverse]
 
+  mean_sd_priorscaling <- data.frame(mean = apply(dataset_log, 2, mean, na.rm=T), sd = apply(dataset_log, 2, sd, na.rm=T))
+
   # Z-score normalization
   dataset_zscore <- scale(dataset_log)
 
-  return(dataset_zscore)
+  scaled_list = list(dataset_zscore = dataset_zscore, mean_sd_priorscaling = mean_sd_priorscaling)
+
+  return(scaled_list)
 }

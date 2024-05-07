@@ -14,6 +14,7 @@ Imports:
   dplyr,
   minpack.lm,
   brms,
+  sva,
   ggplot2,
   ggthemes
 Suggests: 
