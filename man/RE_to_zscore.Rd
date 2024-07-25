@@ -4,7 +4,7 @@
 \alias{RE_to_zscore}
 \title{RE_to_zscore}
 \usage{
-RE_to_zscore(dataset, var_inverse)
+RE_to_zscore(dataset, var_inverse = NULL)
 }
 \arguments{
 \item{dataset}{input dataframe storing raw reporter expression data - make sure the data is appropriately ordered}

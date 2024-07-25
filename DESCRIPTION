@@ -12,6 +12,7 @@ RoxygenNote: 7.3.1
 Imports:
   magrittr,
   dplyr,
+  tidyr,
   minpack.lm,
   brms,
   sva,

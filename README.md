@@ -36,6 +36,8 @@ result_list <- loop_data(data)
 result_df <- convert_results_to_dataframe(result_list)
 ```
 
+Example files with required format can be found in the [example](https://github.com/zhaiting/pdrc/tree/master/example) folder.
+
 ## To cite package 'pdrc' in publications use:
 
    (2024). pdrc: A complex toolkit for processing and analyzing high-throughput DNA repair data. R package version x.x.x. URL: https://github.com/zhaiting/pdrc
