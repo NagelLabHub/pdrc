@@ -7,34 +7,10 @@
 This package is a collection of tools for applying high-throughput DNA repair capacity measurements to population based studies. The tools include data processing and standardization, batch effect correction, regression model fitting, and visualization of results.
 
 Data from two major types of high-throughput DNA repair measurements can be processed and analyzed: 
-1. FM-HCR (Fluorescence Multiplex Host Cell Reactivation), a powerful method to quantify multiple DNA repair pathways in living cells. [PNAS 2014](https://doi.org/10.1073/pnas.1401182111
-        
-        
-        
-        
-        
-        ) [Nat Protoc 2021](https://doi.org/10.1038/s41596-021-00577-3
-        
-        
-        
-        
-        
-        )
-2. CometChip, a high-throughput comet assay allowing parallel quantification of multiple DNA repair activities. [PNAS 2010](https://doi.org/10.1073/pnas.1004056107
-        
-        
-        
-        
-        
-        )
+1. FM-HCR (Fluorescence Multiplex Host Cell Reactivation), a powerful method to quantify multiple DNA repair pathways in living cells. [PNAS 2014](https://doi.org/10.1073/pnas.1401182111) [Nat Protoc 2021](https://doi.org/10.1038/s41596-021-00577-3)
+2. CometChip, a high-throughput comet assay allowing parallel quantification of multiple DNA repair activities. [PNAS 2010](https://doi.org/10.1073/pnas.1004056107)
 
-In the development version we provide functions to standardize data and apply batch correction on FM-HCR data. The batch correction is based on the [ComBat](https://doi.org/10.1093/biostatistics/kxj037
-        
-        
-        
-        
-        
-        ) algorithm, which is a popular method for removing batch effects in high-throughput data. 
+In the development version we provide functions to standardize data and apply batch correction on FM-HCR data. The batch correction is based on the [ComBat](https://doi.org/10.1093/biostatistics/kxj037) algorithm, which is a popular method for removing batch effects in high-throughput data. 
 
 For Comet data specifically, we include a collection of functions to fit biphasic exponential decay models through robust estimation. Available model fitting algorithms include Levenberg-Marquardt Nonlinear Least-Squares Algorithm from the [minpack.lm package](https://CRAN.R-project.org/package=minpack.lm/), and Bayesian Inference from the [brms package](https://github.com/paul-buerkner/brms/). 
 
