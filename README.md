@@ -40,6 +40,7 @@ Example files with required format can be found in the [example](https://github.
    Additionally, you may cite our manuscript (in preparation): Comprehensive Measurement of Inter-Individual Variation in DNA Repair Capacity in Healthy Individuals. 
    
 For LaTeX users, use the following BibTeX entry:
+
 @Manual{pdrc2025,
   title = {pdrc: A Comprehensive Toolkit for Processing and Analyzing High-Throughput DNA Repair Data},
   author = {Ting Zhai, Zachary D Nagel},
