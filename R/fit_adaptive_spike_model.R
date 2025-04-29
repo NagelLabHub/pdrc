@@ -35,34 +35,30 @@ fit_adaptive_spike_model <- function(data, bio_penalty = 4, complexity_penalty =
   # Define models
   formula_fast <- bf(F_t ~ F * exp(-k2 * time), F + k2 ~ 1, nl = TRUE)
   formula_fast_slow <- bf(F_t ~ F * exp(-k2 * time) + S * exp(-k3 * time), F + S + k2 + k3 ~ 1, nl = TRUE)
-  formula_fast_accum <- bf(F_t ~ F * exp(-k2 * time) + A * (1 - exp(-k1 * time)), F + A + k1 + k2 ~ 1, nl = TRUE)
-  formula_fast_slow_accum <- bf(F_t ~ F * exp(-k2 * time) + S * exp(-k3 * time) + A * (1 - exp(-k1 * time)),
+  formula_fast_accum <- bf(F_t ~ (F + A * (1 - exp(-k1 * time))) * exp(-k2 * time),
+                            F + A + k1 + k2 ~ 1, nl = TRUE)
+  formula_fast_slow_accum <- bf(F_t ~ F * exp(-k2 * time) + S * exp(-k3 * time) + A * (1 - exp(-k1 * time)) * exp(-k2 * time),
                                 F + S + A + k1 + k2 + k3 ~ 1, nl = TRUE)
   
   # Priors
   priors_fast <- c(
     set_prior("normal(40, 10)", nlpar = "F", lb = 0),
-    set_prior("normal(0.2, 0.1)", nlpar = "k2", lb = 0)
+    set_prior("normal(0.1, 0.05)", nlpar = "k2", lb = 0)
   )
   priors_fast_slow <- c(
-    set_prior("normal(40, 10)", nlpar = "F", lb = 0),
+    priors_fast,
     set_prior("normal(10, 10)", nlpar = "S", lb = 0),
-    set_prior("normal(0.02, 0.01)", nlpar = "k3", lb = 0),
-    set_prior("normal(0.2, 0.1)", nlpar = "k2", lb = 0)
+    set_prior("normal(0.02, 0.01)", nlpar = "k3", lb = 0)
   )
   priors_fast_accum <- c(
-    set_prior("normal(40, 10)", nlpar = "F", lb = 0),
-    set_prior("normal(0, 10)", nlpar = "A", lb = 0),
-    set_prior("normal(0.4, 0.2)", nlpar = "k1", lb = 0),
-    set_prior("normal(0.2, 0.1)", nlpar = "k2", lb = 0)
+    priors_fast,
+    set_prior("normal(10, 10)", nlpar = "A", lb = 0),
+    set_prior("normal(0.4, 0.2)", nlpar = "k1", lb = 0)
   )
   priors_fast_slow_accum <- c(
-    set_prior("normal(40, 10)", nlpar = "F", lb = 0),
-    set_prior("normal(10, 10)", nlpar = "S", lb = 0),
-    set_prior("normal(0, 10)", nlpar = "A", lb = 0),
-    set_prior("normal(0.4, 0.2)", nlpar = "k1", lb = 0),
-    set_prior("normal(0.02, 0.01)", nlpar = "k3", lb = 0),
-    set_prior("normal(0.2, 0.1)", nlpar = "k2", lb = 0)
+    priors_fast_slow,
+    set_prior("normal(10, 10)", nlpar = "A", lb = 0),
+    set_prior("normal(0.4, 0.2)", nlpar = "k1", lb = 0)
   )
   
   model_list <- list(
@@ -106,28 +102,37 @@ fit_adaptive_spike_model <- function(data, bio_penalty = 4, complexity_penalty =
   
   # Apply soft penalties
   for (i in seq_len(nrow(model_scores))) {
-    model <- model_scores$Model[i]
 
-    # Apply biological penalties
-    if (!spike_detected && grepl("accum", model)) {
-      model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
-    }
-    if (short_followup && grepl("slow", model)) {
-      model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
-    }
-    if (spike_detected && grepl("^fast$", model)) {
-      model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
+    model      <- model_scores$Model[i]
+    has_accum  <- grepl("accum", model)      # TRUE for “…_accum” names
+    has_slow   <- grepl("slow",  model)      # TRUE for “…_slow”  names
+
+    ## -------- 1. Biological penalties  -----------------------------------
+    #  (a)  Spike logic
+    if ( spike_detected && !has_accum)   # spike present  but NO accumulation term
+        model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
+
+    if (!spike_detected &&  has_accum)   # no spike present but HAVE accumulation
+        model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
+
+    #  (b)  Follow-up-duration / slow-decay logic
+    if ( short_followup &&  has_slow)    # ≤60 min but slow term included
+        model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
+
+    if (!short_followup && !has_slow)    # >60 min but NO slow term      <-- NEW
+        model_scores$BioPenalty[i] <- model_scores$BioPenalty[i] + bio_penalty
+
+    ## -------- 2. Complexity penalty  -------------------------------------
+    if (model != "fast") {               # 'fast' has 1 parameter
+        model_scores$ComplexityPenalty[i] <-
+          complexity_penalty * (model_terms[model] - 1)
     }
 
-    # Complexity penalty
-    if (model != "fast") {
-      model_scores$ComplexityPenalty[i] <- complexity_penalty * (model_terms[model] - 1)
-    }
-
-    # Final Score
-    model_scores$FinalScore[i] <- model_scores$LOOIC[i] +
-    model_scores$BioPenalty[i] +
-    model_scores$ComplexityPenalty[i]
+    ## -------- 3. Final score ---------------------------------------------
+    model_scores$FinalScore[i] <-
+      model_scores$LOOIC[i] +
+      model_scores$BioPenalty[i] +
+      model_scores$ComplexityPenalty[i]
   }
   
   # Select model

@@ -15,169 +15,150 @@
 #' @importFrom purrr map_chr compact
 
 summarize_and_plot <- function(res, data = NULL) {
-  if (is.null(data) && !is.null(res$data)) {
-    data <- res$data
+
+  # ───────────────────────── 0. checks ─────────────────────────
+  if (is.null(data) && !is.null(res$data)) data <- res$data
+  if (is.null(data)) stop("Data must be provided or embedded in `res`.")
+
+  fit         <- res$best_model
+  best_model  <- res$best_model_name
+  looic_value <- dplyr::filter(res$model_scores, Model == best_model)$LOOIC
+
+  draws <- brms::as_draws_df(fit)
+
+  pull_d <- function(df, nm) {
+    v <- paste0("b_", nm, "_Intercept")
+    if (v %in% names(df)) df[[v]] else rep(NA_real_, nrow(df))
   }
-  if (is.null(data)) stop("Data must be provided or stored inside 'res' object.")
 
-  fit <- res$best_model
-  best_model_name <- res$best_model_name
-  looic_value <- res$model_scores %>%
-    dplyr::filter(Model == best_model_name) %>%
-    dplyr::pull(LOOIC)
+  # ────────────────── 1. raw posterior vectors ─────────────────
+  F_amp <- pull_d(draws, "F")
+  S_amp <- pull_d(draws, "S")
+  A_amp <- pull_d(draws, "A")
+  k1    <- pull_d(draws, "k1")
+  k2    <- pull_d(draws, "k2")   # fast decay
+  k3    <- pull_d(draws, "k3")   # slow decay (may be NA)
 
-  samples <- brms::as_draws_df(fit)
+  accumulation  <- !all(is.na(A_amp))
+  slow_included <- !all(is.na(S_amp))
 
-  # Helper to extract parameters
-  extract_or_na <- function(samples, name) {
-    varname <- paste0("b_", name, "_Intercept")
-    if (varname %in% names(samples)) {
-      return(samples[[varname]])
-    } else {
-      return(rep(NA, nrow(samples)))
+  # ───────────── 2. enforce k2 > k3 for two-phase models ───────
+  if (slow_included) {
+    swap_idx <- which(!is.na(k3) & k3 > k2)
+    if (length(swap_idx)) {
+      temp <- k2[swap_idx];  k2[swap_idx] <- k3[swap_idx];  k3[swap_idx] <- temp
+      temp <- F_amp[swap_idx]; F_amp[swap_idx] <- S_amp[swap_idx]; S_amp[swap_idx] <- temp
     }
   }
 
-  # Extract amplitudes and rates
-  F_amp <- extract_or_na(samples, "F")
-  S_amp <- extract_or_na(samples, "S")
-  A_amp <- extract_or_na(samples, "A")
+  hl   <- function(k) log(2) / k
+  t12_1 <- hl(k1)
+  t12_2 <- hl(k2)
+  t12_3 <- hl(k3)
 
-  k1 <- extract_or_na(samples, "k1")
-  k2 <- extract_or_na(samples, "k2")
-  k3 <- extract_or_na(samples, "k3")
+  # Overall half-life (weighted rate) ‒ now safe after swap
+  overall_t12 <- if (slow_included) {
+    w_k <- (F_amp * k2 + S_amp * k3) / (F_amp + S_amp)
+    hl(w_k)
+  } else t12_2
 
-  # Half-life calculation
-  half_life <- function(k) log(2) / k
+  # ───────────── 3. peak stats (only if accumulation) ──────────
+  if (accumulation) {
+    peak_times  <- vapply(seq_along(k2), function(i) {
+      optimise(function(t) {
+        -((F_amp[i] + A_amp[i]*(1-exp(-k1[i]*t))) * exp(-k2[i]*t) +
+            if (!is.na(S_amp[i])) S_amp[i]*exp(-k3[i]*t) else 0)
+    }, c(0, max(data$time)))$minimum }, numeric(1))
 
-  t1_2_k1 <- half_life(k1)
-  t1_2_k2 <- half_life(k2)
-  t1_2_k3 <- half_life(k3)
-
-  # Overall decay half-life
-  overall_decay_half_life <- if (all(is.na(S_amp))) {
-    t1_2_k2
-  } else {
-    total_F_S <- F_amp + S_amp
-    weighted_k <- (F_amp * k2 + S_amp * k3) / total_F_S
-    log(2) / weighted_k
+    peak_values <- vapply(seq_along(k2), function(i) {
+      (F_amp[i] + A_amp[i]*(1-exp(-k1[i]*peak_times[i]))) * exp(-k2[i]*peak_times[i]) +
+        if (!is.na(S_amp[i])) S_amp[i]*exp(-k3[i]*peak_times[i]) else 0
+    }, numeric(1))
   }
 
-  accumulation_included <- !all(is.na(A_amp))
-
-  # Peak calculations (only if accumulation included)
-  if (accumulation_included) {
-    peak_times <- sapply(1:nrow(samples), function(i) {
-      optimize(function(t) {
-        -(F_amp[i] * exp(-k2[i] * t) +
-            ifelse(!is.na(S_amp[i]), S_amp[i] * exp(-k3[i] * t), 0) +
-            A_amp[i] * (1 - exp(-k1[i] * t)))
-      }, c(0, max(data$time)))$minimum
-    })
-
-    peak_values <- sapply(1:nrow(samples), function(i) {
-      F_amp[i] * exp(-k2[i] * peak_times[i]) +
-        ifelse(!is.na(S_amp[i]), S_amp[i] * exp(-k3[i] * peak_times[i]), 0) +
-        A_amp[i] * (1 - exp(-k1[i] * peak_times[i]))
-    })
-  }
-
-  # Build summary table
-  parameters <- list(
-    if (accumulation_included) list(name = "A_amp", values = A_amp),
+  # ───────────── 4. assemble summary table ─────────────────────
+  blocks <- list(
     list(name = "F_amp", values = F_amp),
-    if (!all(is.na(S_amp))) list(name = "S_amp", values = S_amp),
-    if (accumulation_included) list(name = "k1_accum", values = k1),
+    if (slow_included) list(name = "S_amp", values = S_amp),
+    if (accumulation)  list(name = "A_amp", values = A_amp),
+
     list(name = "k2_fast", values = k2),
-    if (!all(is.na(S_amp))) list(name = "k3_slow", values = k3),
-    if (accumulation_included) list(name = "t1/2_accum", values = t1_2_k1),
-    list(name = "t1/2_fast", values = t1_2_k2),
-    if (!all(is.na(S_amp))) list(name = "t1/2_slow", values = t1_2_k3),
-    list(name = "Overall_decay_t1/2", values = overall_decay_half_life),
-    if (accumulation_included) list(name = "Peak_time", values = peak_times),
-    if (accumulation_included) list(name = "Peak_value", values = peak_values)
-  ) %>% purrr::compact()
+    if (slow_included) list(name = "k3_slow", values = k3),
+    if (accumulation)  list(name = "k1_accum", values = k1),
+
+    list(name = "t1/2_fast", values = t12_2),
+    if (slow_included) list(name = "t1/2_slow", values = t12_3),
+    if (accumulation)  list(name = "t1/2_accum", values = t12_1),
+
+    list(name = "Overall_decay_t1/2", values = overall_t12),
+    if (accumulation)  list(name = "Peak_time",  values = peak_times),
+    if (accumulation)  list(name = "Peak_value", values = peak_values)
+  ) |> purrr::compact()
 
   summary_table <- tibble::tibble(
-    Parameter = purrr::map_chr(parameters, "name"),
-    Median = purrr::map_chr(parameters, ~ format(median(.x$values, na.rm = TRUE), scientific = FALSE, digits = 3)),
-    CI_lower = purrr::map_chr(parameters, ~ format(quantile(.x$values, 0.025, na.rm = TRUE), scientific = FALSE, digits = 3)),
-    CI_upper = purrr::map_chr(parameters, ~ format(quantile(.x$values, 0.975, na.rm = TRUE), scientific = FALSE, digits = 3))
+    Parameter = purrr::map_chr(blocks, "name"),
+    Median    = purrr::map_chr(blocks, ~ format(median(.x$values, na.rm = TRUE),
+                                                digits = 3, scientific = FALSE)),
+    CI_lower  = purrr::map_chr(blocks, ~ format(quantile(.x$values, 0.025, na.rm = TRUE),
+                                                digits = 3, scientific = FALSE)),
+    CI_upper  = purrr::map_chr(blocks, ~ format(quantile(.x$values, 0.975, na.rm = TRUE),
+                                                digits = 3, scientific = FALSE))
   )
 
-  # Predictions for plotting
-  new_data <- tibble(time = seq(min(data$time), max(data$time), length.out = 1000))
-  pred <- fitted(fit, newdata = new_data, re_formula = NA)
-  new_data$predicted <- pred[, 1]
-  new_data$lower <- pred[, 3]
-  new_data$upper <- pred[, 4]
+  # ───────────── 5. prediction grid & plot data ────────────────
+  grid <- tibble::tibble(time = seq(min(data$time), max(data$time), length.out = 1000))
+  fit_pred <- fitted(fit, newdata = grid, re_formula = NA)
+  grid$predicted <- fit_pred[, 1]
 
-  summary_data <- data %>%
-    dplyr::group_by(time) %>%
-    dplyr::summarise(avg = mean(F_t), sem = sd(F_t) / sqrt(n()))
+  summary_data <- data |> dplyr::group_by(time) |>
+    dplyr::summarise(avg = mean(F_t),
+                     sem = stats::sd(F_t)/sqrt(dplyr::n()),
+                     .groups = "drop")
 
-  sample_name <- unique(data$Sample_Name)
-  sample_line <- paste0("Sample: ", sample_name, "\n")
-  looic_line <- sprintf("LOOIC: %.2f\n", looic_value)
-
-  # Dynamic depending on best model
-  if (best_model_name == "fast") {
-    fast_line <- sprintf("Decay t½: %.1f min\n", median(t1_2_k2, na.rm = TRUE))
-    accum_line <- ""
-    slow_line <- ""
-    overall_line <- ""
-  } else if (best_model_name == "fast_accum") {
-    accum_line <- sprintf("Accum t½: %.1f min\n", median(t1_2_k1, na.rm = TRUE))
-    fast_line <- sprintf("Decay t½: %.1f min\n", median(t1_2_k2, na.rm = TRUE))
-    slow_line <- ""
-    overall_line <- ""
-  } else if (best_model_name %in% c("fast_slow", "fast_slow_accum")) {
-    accum_line <- if (accumulation_included) sprintf("Accum t½: %.1f min\n", median(t1_2_k1, na.rm = TRUE)) else ""
-    fast_line <- sprintf("Fast t½: %.1f min\n", median(t1_2_k2, na.rm = TRUE))
-    slow_line <- if (!all(is.na(S_amp))) sprintf("Slow t½: %.1f min\n", median(t1_2_k3, na.rm = TRUE)) else ""
-    overall_line <- sprintf("Overall decay t½: %.1f min", median(overall_decay_half_life, na.rm = TRUE))
-  } else {
-  # fallback just in case
-    fast_line <- sprintf("Fast t½: %.1f min\n", median(t1_2_k2, na.rm = TRUE))
-    accum_line <- ""
-    slow_line <- ""
-    overall_line <- sprintf("Overall decay t½: %.1f min", median(overall_decay_half_life, na.rm = TRUE))
-  }
-
-  if (accumulation_included && best_model_name != "fast") {
-    peak_time_med <- median(peak_times, na.rm = TRUE)
-    peak_value_med <- median(peak_values, na.rm = TRUE)
-    peak_line <- paste0(
-      "Peak Time: ", format(peak_time_med, scientific = FALSE, digits = 3), " min\n",
-      "Peak Value: ", format(peak_value_med, scientific = FALSE, digits = 3), "\n"
-    )
-  } else {
-    peak_line <- ""
-  }
-
-  # Assemble annotation text
-  annotation_text <- paste0(
-    sample_line,
-    looic_line,
-    peak_line,
-    accum_line,
-    fast_line,
-    slow_line,
-    overall_line
+  # ───────────── 6. dynamic annotation block ───────────────────
+  ann <- switch(best_model,
+    "fast" = sprintf("Decay t½: %.1f min\n", median(t12_2, na.rm = TRUE)),
+    "fast_accum" = paste0(
+        sprintf("Accum t½: %.1f min\n", median(t12_1, na.rm = TRUE)),
+        sprintf("Decay t½: %.1f min\n",  median(t12_2, na.rm = TRUE))),
+    "fast_slow" = paste0(
+        sprintf("Fast t½: %.1f min\n", median(t12_2, na.rm = TRUE)),
+        sprintf("Slow t½: %.1f min\n", median(t12_3, na.rm = TRUE)),
+        sprintf("Overall decay t½: %.1f min\n", median(overall_t12, na.rm = TRUE))),
+    "fast_slow_accum" = paste0(
+        sprintf("Accum t½: %.1f min\n", median(t12_1, na.rm = TRUE)),
+        sprintf("Fast t½: %.1f min\n",  median(t12_2, na.rm = TRUE)),
+        sprintf("Slow t½: %.1f min\n",  median(t12_3, na.rm = TRUE)),
+        sprintf("Overall decay t½: %.1f min\n", median(overall_t12, na.rm = TRUE)))
   )
 
-  # Create plot
-  plot <- ggplot2::ggplot(summary_data, aes(time, avg)) +
-    ggplot2::geom_point(color = "blue") +
-    ggplot2::geom_errorbar(aes(ymin = avg - sem, ymax = avg + sem), width = 1, color = "blue") +
-    ggplot2::geom_line(data = new_data, aes(time, predicted), linetype = "dashed") +
+  peak_block <- if (accumulation && best_model != "fast") {
+    sprintf("Peak Time: %.2f min\nPeak Value: %.1f\n",
+            median(peak_times,  na.rm = TRUE),
+            median(peak_values, na.rm = TRUE))
+  } else ""
+
+  annotation <- paste0(
+    "Sample: ", unique(data$Sample_Name), "\n",
+    sprintf("LOOIC: %.2f\n", looic_value),
+    peak_block,
+    ann
+  )
+
+  # ───────────── 7. plot ───────────────────────────────────────
+  plt <- ggplot2::ggplot(summary_data, ggplot2::aes(time, avg)) +
+    ggplot2::geom_point(colour = "blue") +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = avg-sem, ymax = avg+sem),
+                           colour = "blue", width = 1) +
+    ggplot2::geom_line(data = grid,
+                       ggplot2::aes(time, predicted),
+                       linetype = "dashed") +
     ggthemes::theme_few() +
     ggplot2::labs(x = "Repair time (min)", y = "% DNA in tail") +
-    ggplot2::annotate("text", x = Inf, y = Inf, label = annotation_text,
-             hjust = 1.1, vjust = 1.2, size = 4)
+    ggplot2::annotate("text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.2,
+                      label = annotation, size = 4)
 
-  return(list(
-    summary_table = summary_table,
-    plot = plot
-  ))
+  list(summary_table = summary_table,
+       plot          = plt)
 }
+

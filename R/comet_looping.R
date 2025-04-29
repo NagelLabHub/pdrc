@@ -129,3 +129,26 @@ extract_comet_plots <- function(results_list, pdf_file = NULL, ncol = 2, width =
   return(plot_list)
 }
 
+#' extract_model_scores
+#'
+#' Extract model_scores tables from all samples in an adaptive fitting result list.
+#'
+#' @param results_list A named list of results (from loop_comet_data(..., method = "adaptive")).
+#'
+#' @return A data frame combining model_scores for all samples, with `Sample` as the first column.
+#' @export
+#' @importFrom purrr map_dfr
+#' @importFrom dplyr select relocate mutate
+extract_model_scores <- function(results_list) {
+  purrr::map_dfr(names(results_list), function(sample) {
+    res <- results_list[[sample]]
+    if (!is.null(res$model_scores)) {
+      res$model_scores %>%
+        dplyr::mutate(Sample = sample) %>%
+        dplyr::relocate(Sample, .before = Model)  # Move Sample to the first column
+    } else {
+      NULL
+    }
+  })
+}
+
