@@ -7,7 +7,6 @@
 This package is a collection of tools for applying high-throughput DNA repair capacity measurements to population based studies. 
 It provides standardized pipelines for data processing, batch correction, flexible regression model fitting (NLS and Bayesian), adaptive modeling based on biological prior knowledge, and high-quality visualization of results.
 
----
 
 ## What's New in Version 1.0.1
 
@@ -17,7 +16,6 @@ It provides standardized pipelines for data processing, batch correction, flexib
 - **Harmonized outputs** across all modeling methods (fit object, parameter estimates, half-lives, annotated plots).
 - **Updated plotting**: annotations now include sample name, LOOIC, half-lives, and peak information if applicable.
 
----
 
 ## How to use
 
@@ -68,6 +66,7 @@ For LaTeX users, use the following BibTeX entry:
 ## Contributors: 
 
 Primary Developer: Ting Zhai.
+
 Advisor: Zachary D Nagel.
 
 Date: 04-28-2025.
