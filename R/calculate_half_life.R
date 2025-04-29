@@ -1,6 +1,7 @@
-# 3. half-life estimation for overall, fast, slow phases
 
 #' calculate_half_life
+#' 
+#' This function calculates the half-life of a biphasic decay model.
 #'
 #' @param F fast phase span
 #' @param S slow phase span
@@ -9,9 +10,7 @@
 #'
 #' @return a list with overall, fast phase, slow phase half-life estimates
 #' @export
-#'
-#' @examples
-#' half_life <- calculate_half_life(40,0,0.1,0.01)
+
 calculate_half_life <- function(F, S, k_f, k_s) {
   half_life_eq <- function(t_half, F, S, k_f, k_s) {
     F * exp(-k_f * t_half) + S * exp(-k_s * t_half) - (F + S) / 2 }

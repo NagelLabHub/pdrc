@@ -19,8 +19,5 @@ calculate_half_life(F, S, k_f, k_s)
 a list with overall, fast phase, slow phase half-life estimates
 }
 \description{
-calculate_half_life
-}
-\examples{
-half_life <- calculate_half_life(40,0,0.1,0.01)
+This function calculates the half-life of a biphasic decay model.
 }

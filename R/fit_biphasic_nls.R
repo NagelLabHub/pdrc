@@ -1,7 +1,8 @@
-# 4. main model fitting process - non-linear least squares
 
-#' biphasic_fit_nls
+#' fit_biphasic_nls
 #'
+#' Fit biphasic model using non-linear least squares (nlsLM)
+#' 
 #' @import minpack.lm
 #' @import ggthemes
 #' @importFrom magrittr %>%
@@ -9,22 +10,18 @@
 #' @importFrom ggplot2 ggplot aes geom_point geom_errorbar geom_line coord_cartesian scale_y_continuous annotate xlab ylab
 #' @importFrom stats coef optim predict residuals sd time uniroot
 #'
-#' @param data prepared data
-#' @param initial_params initial values for fitting
+#' @param data prepared comet data
+#' @param initial_params vector of initial parameters for the model: F, S, k_f, k_s
 #'
 #' @return a list of model fit par, estimates and plot
 #' @export
-#'
-#' @examples
-#' single_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
-#' params <- c(40,0,0.1,0.01)
-#' result_list = biphasic_fit_nls(single_data, params)
-#'
-biphasic_fit_nls <- function(data, initial_params) {
-  # Fit the model using provided initial parameters
+
+fit_biphasic_nls <- function(data, initial_params) {
+
   model <- function(t, F, S, k_f, k_s) {
     F * exp(-k_f * t) + S * exp(-k_s * t)
   }
+
   fit <- minpack.lm::nlsLM(F_t ~ model(time, F, S, k_f, k_s),
                data = data, control = list(maxiter = 200),
                lower = c(F = 0, S = 0, k_f = 0, k_s = 0),
@@ -78,13 +75,13 @@ biphasic_fit_nls <- function(data, initial_params) {
   # Create a ggplot object for the data and the model prediction
   plot_object <- ggplot() +
     geom_point(data = summary_data, aes(x = time, avg_F_t), color = "blue", size=2) +
-    geom_errorbar(data = summary_data, aes(x=time, ymin=avg_F_t-sem_F_t, ymax=avg_F_t+sem_F_t), color = "blue", size = 0.8, width=2) +
+    geom_errorbar(data = summary_data, aes(x=time, ymin=avg_F_t-sem_F_t, ymax=avg_F_t+sem_F_t), color = "blue", linewidth = 0.8, width=2) +
     ggthemes::theme_few() +
     geom_line(data = new_data, aes(x = time, y = F_t_predicted), linetype = "dashed") + coord_cartesian(clip = "off") +
     scale_y_continuous(limits = c(0, 60)) +
-    annotate("text", x = Inf, y = Inf, label = sprintf("Sample: %s\nR_sqaured = %.2f\nt_half overall = %.2f\nt_half fast = %.2f", sample_name, R_squared, half_life_overall, half_life_fast), hjust = 1.1, vjust = 2, size = 4, colour = "black")  +
+    annotate("text", x = Inf, y = Inf, label = sprintf("Sample: %s\nR²: %.2f\nOverall decay t½: %.2f min\nFast t½: %.2f min", sample_name, R_squared, half_life_overall, half_life_fast), hjust = 1.1, vjust = 1.2, size = 4, colour = "black")  +
     xlab("Repair time (min)") +
-    ylab("% DNA in tail \n (background corrected)")
+    ylab("% DNA in tail")
 
   # Return the fitted parameters, half-life, RSE, R-squared, and plot object
   return(list(fit = fit,
@@ -92,6 +89,6 @@ biphasic_fit_nls <- function(data, initial_params) {
               half_life = half_life,
               RSE = RSE,
               R_squared = R_squared,
-              plot_object = plot_object,
+              plot = plot_object,
               sample_name = sample_name))
 }

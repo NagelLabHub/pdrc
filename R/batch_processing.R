@@ -1,11 +1,7 @@
-# 1. batch effect evaluation
 
 #' batch_evaluation
-#'
-#' @import ggplot2
-#' @import tidyr
-#' @import dplyr
-#' @import ggthemes
+#' 
+#' Evaluate batch effects across different batches
 #'
 #' @param dataset input dataframe storing data for batch effect evaluation - make sure the rows are appropriately ordered
 #' @param pheno input dataframe storing phenotype data - make sure the rows are appropriately ordered
@@ -13,15 +9,10 @@
 #'
 #' @return a list of different evaluation metrics for batch effect: if input data is on original scale, use cv; if standardized, use sd
 #' @export
-#'
-#' @examples
-#' dat_og <- data.frame(UG = c(0.05,0.08,0.10), NHEJ = c(23,16,19), HR = c(2,4,6))
-#' list_std <- RE_to_zscore(dat_og, c("UG"))
-#' dat_std <- list_std$dataset_zscore
-#' pheno <- data.frame(Sample = c("001","002","003"),
-#' age = c(34,36,57), sex = c("M","F","M"), batch = c("A","B","A"))
-#' list = batch_evaluation(dataset, pheno, "batch")
-#'
+#' @import ggplot2
+#' @import tidyr
+#' @import dplyr
+#' @import ggthemes
 
 batch_evaluation <- function(dataset, pheno, batch_col) {
 
@@ -54,3 +45,39 @@ batch_evaluation <- function(dataset, pheno, batch_col) {
   return(eval_list)
 }
 
+#' batch_correction
+#'
+#' Batch correction using ComBat
+#' 
+#' @importFrom sva ComBat
+#'
+#' @param dataset input dataframe storing standardized data for batch correction - make sure the rows are appropriately ordered
+#' @param pheno input dataframe storing phenotype data for batch correction - make sure the rows are appropriately ordered
+#' @param covariate input covariate names in pheno whose variations need to be retained
+#' @param batch input batch column name in pheno
+#'
+#' @return a dataframe with batch corrected data after ComBat
+#' @export
+
+batch_correction <- function(dataset, pheno, covariate=NULL, batch) {
+
+  if (!(batch %in% names(pheno))) {
+    stop("The batch column does not exist in the phenotype data.")
+  }
+
+  batch_col <- pheno[[batch]]
+
+  t_dataset <- t(dataset)
+
+  if (is.null(covariate)) {
+    t_corrected_data <- ComBat(dat = as.matrix(t_dataset), batch = batch_col, par.prior = TRUE, prior.plots = FALSE)
+  } else {
+    formula <- paste("~", paste(covariate, collapse = " + "))
+    model <- model.matrix(as.formula(formula), data = pheno)
+    t_corrected_data <- ComBat(dat = as.matrix(t_dataset), batch = batch_col, mod = model, par.prior = TRUE, prior.plots = FALSE)
+  }
+
+  corrected_data = as.data.frame(t(t_corrected_data))
+
+  return(corrected_data)
+}

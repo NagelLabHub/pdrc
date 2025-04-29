@@ -1,3 +1,8 @@
 ^kinetics\.Rproj$
 ^\.Rproj\.user$
-^LICENSE\.md$
+^\.Rhistory$
+^\.RData$
+^\.Ruserdata$
+^\.quarto$
+^\.DS_Store$
+^\.gitignore$

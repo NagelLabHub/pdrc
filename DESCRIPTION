@@ -1,6 +1,6 @@
-Package: pdrc
+Package: pdrcdev
 Title: A complex toolkit for processing and analyzing high-throughput DNA repair data
-Version: 1.0.0
+Version: 1.0.1
 Authors@R: 
     person("Ting", "Zhai", , "tingzhai@hsph.harvard.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-8763-1387"))
@@ -13,7 +13,7 @@ Description:
 License: MIT
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.2
 Imports:
   magrittr,
   dplyr,
@@ -26,3 +26,5 @@ Imports:
 Config/testthat/edition: 3
 URL: https://github.com/NagelLabHub/pdrc
 BugReports: https://github.com/NagelLabHub/pdrc/issues
+Suggests: 
+    testthat (>= 3.0.0)

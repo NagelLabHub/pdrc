@@ -15,10 +15,5 @@ optimize_parameters(data, initial_params)
 optimized parameters in c(F, S, k_f, k_s)
 }
 \description{
-optimize_parameters
-}
-\examples{
-out_data <- data.frame(time = c(0, 15, 30, 60, 120), F_t = c(40,26,19,15,12))
-params <- optimize_parameters(out_data, c(40,0,0.1,0.01))
-
+Optimize parameters for the biphasic exponential decay model using non-linear least squares.
 }
