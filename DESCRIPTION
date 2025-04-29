@@ -1,4 +1,4 @@
-Package: pdrcdev
+Package: pdrc
 Title: A complex toolkit for processing and analyzing high-throughput DNA repair data
 Version: 1.0.1
 Authors@R: 
