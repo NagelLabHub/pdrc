@@ -7,13 +7,15 @@
 comet_list_to_df(results_list, method = "adaptive")
 }
 \arguments{
-\item{results_list}{A list generated from \code{loop_comet_data()}.}
+\item{results_list}{Output from \code{loop_comet_data()}}
 
-\item{method}{Character; method used to fit: "nls", "bayes", or "adaptive".}
+\item{method}{"nls", "bayes", or "adaptive"}
 }
 \value{
-A data frame summarizing fitted parameters per sample.
+\if{html}{\out{<div class="sourceCode">}}\preformatted{        Tibble: one row per sample, one block of
+                <estimate / low / high> columns per parameter
+}\if{html}{\out{</div>}}
 }
 \description{
-Summarize list of comet fitting results into a single data frame.
+Summarise list of comet-fit results into a tidy data-frame
 }
