@@ -43,49 +43,91 @@ loop_comet_data <- function(dataset_name, method = "adaptive") {
   return(results_list)
 }
 
+
 #' comet_list_to_df
 #'
-#' Summarize list of comet fitting results into a single data frame.
+#' Summarise list of comet-fit results into a tidy data-frame
 #'
-#' @param results_list A list generated from `loop_comet_data()`.
-#' @param method Character; method used to fit: "nls", "bayes", or "adaptive".
-#'
-#' @return A data frame summarizing fitted parameters per sample.
+#' @param results_list Output from `loop_comet_data()`
+#' @param method       "nls", "bayes", or "adaptive"
+#' @return             Tibble: one row per sample, one block of
+#'                     <estimate / low / high> columns per parameter
 #' @export
-#' @importFrom purrr map_dfr
+#' @importFrom dplyr mutate relocate all_of
+#' @importFrom purrr imap_dfr
 #' @importFrom tidyr pivot_wider
-#' @importFrom dplyr mutate
+#' @importFrom stringr str_replace str_replace_all
 comet_list_to_df <- function(results_list, method = "adaptive") {
-  rows <- purrr::map_dfr(names(results_list), function(sample_name) {
-    res <- results_list[[sample_name]]
 
-    if (method == "nls" || method == "bayes") {
-      # Direct extraction for nls and bayes
-      tibble::tibble(
-        Sample = sample_name,
-        F_amp = res$params["F"],
-        S_amp = res$params["S"],
-        k_f = res$params["k_f"],
-        k_s = res$params["k_s"],
+  purrr::imap_dfr(results_list, function(res, sample_name) {
+
+    ## ------------------------------------------------------------- ##
+    ##  NLS / Bayes – keep original output, add empty CI placeholders
+    ## ------------------------------------------------------------- ##
+    if (method %in% c("nls", "bayes")) {
+
+      out <- tibble::tibble(
+        Sample          = sample_name,
+        F_amp           = res$params["F" ],
+        F_amp_low       = NA_real_,
+        F_amp_high      = NA_real_,
+        S_amp           = res$params["S" ],
+        S_amp_low       = NA_real_,
+        S_amp_high      = NA_real_,
+        k_f             = res$params["k_f"],
+        k_f_low         = NA_real_,
+        k_f_high        = NA_real_,
+        k_s             = res$params["k_s"],
+        k_s_low         = NA_real_,
+        k_s_high        = NA_real_,
         Half_life_overall = res$half_life$overall,
-        Half_life_fast = res$half_life$fast_phase,
-        Half_life_slow = res$half_life$slow_phase
+        Half_life_fast    = res$half_life$fast_phase,
+        Half_life_slow    = res$half_life$slow_phase
       )
-    } else if (method == "adaptive") {
-      # Use summarize_and_plot() to extract full summary for adaptive models
-      summary_result <- summarize_and_plot(res)  # uses res$data internally
 
-      summary_wide <- summary_result$summary_table %>%
-        tidyr::pivot_wider(names_from = Parameter, values_from = Median) %>%
-        dplyr::mutate(Sample = sample_name)
-
-      summary_wide
-    } else {
-      stop("Invalid method: must be 'nls', 'bayes', or 'adaptive'.")
+      return(out)
     }
-  })
 
-  return(rows)
+    ## ------------------------------------------------------------- ##
+    ##  Adaptive – pull everything from `summarize_and_plot()`
+    ## ------------------------------------------------------------- ##
+    if (method == "adaptive") {
+
+      sum_tbl <- summarize_and_plot(res)$summary_table |>
+        dplyr::select(Parameter, Median, CI_lower, CI_upper) |>
+        ## make syntactically safe names (t1/2_fast -> t1_2_fast etc.)
+        dplyr::mutate(Parameter = stringr::str_replace_all(Parameter, "[/ ]", "_"))
+
+      wide <- sum_tbl |>
+        tidyr::pivot_wider(
+          names_from  = Parameter,
+          values_from = c(Median, CI_lower, CI_upper),
+          names_glue  = "{Parameter}_{.value}"
+        ) |>
+        ## nicer suffixes
+        dplyr::rename_with(~stringr::str_replace(., "_Median$",  ""),
+                           dplyr::ends_with("_Median")) |>
+        dplyr::rename_with(~stringr::str_replace(., "_CI_lower$", "_low"),
+                           dplyr::ends_with("_CI_lower")) |>
+        dplyr::rename_with(~stringr::str_replace(., "_CI_upper$", "_high"),
+                           dplyr::ends_with("_CI_upper")) |>
+        dplyr::mutate(Sample = sample_name) |>
+        dplyr::relocate(Sample, .before = tidyselect::everything())
+
+      ## Optional: order columns so every “estimate/low/high” block stays together
+      param_order <- sum_tbl$Parameter
+      wanted_cols <- unlist(
+        purrr::map(param_order, \(p) c(p, paste0(p, "_low"), paste0(p, "_high")))
+      )
+      wide <- wide |>
+        dplyr::relocate(dplyr::all_of(intersect(wanted_cols, names(wide))),
+                        .after = Sample)
+
+      return(wide)
+    }
+
+    stop("`method` must be one of 'nls', 'bayes', or 'adaptive'.")
+  })
 }
 
 #' extract_comet_plots
