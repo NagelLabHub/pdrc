@@ -49,25 +49,4 @@ Example files with required format can be found in the [example](https://github.
 
 ## To cite package 'pdrc' in publications use:
 
-   Ting Zhai, Zachary D Nagel (2025). **pdrc**: A complex toolkit for processing and analyzing high-throughput DNA repair data. R package version 1.0.1. URL: https://github.com/NagelLabHub/pdrc
-   
-   Alternatively, you may cite our manuscript (in preparation): Comprehensive Measurement of Inter-Individual Variation in DNA Repair Capacity in Healthy Individuals. 
-   
-For LaTeX users, use the following BibTeX entry:
-
-@Manual{pdrc2025,
-  title = {pdrc: A Comprehensive Toolkit for Processing and Analyzing High-Throughput DNA Repair Data},
-  author = {Ting Zhai and Zachary D Nagel},
-  year = {2025},
-  note = {R package version 1.0.1},
-  url = {https://github.com/NagelLabHub/pdrc},
-}
-
-## Contributors: 
-
-Primary Developer: Ting Zhai.
-
-Advisor: Zachary D Nagel.
-
-Date: 04-28-2025.
-
+Zhai T, Mazzucato P, Ricciardi C, Christiani DC, Liang L, Samson LD, Chaim IA, Nagel ZD. Comprehensive Measurement of Inter-Individual Variation in DNA Repair Capacity in Healthy Individuals. medRxiv. doi: [10.1101/2025.06.13.25329369](https://doi.org/10.1101/2025.06.13.25329369).
