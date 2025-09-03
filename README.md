@@ -32,20 +32,31 @@ You can install the development version of **pdrc** from [GitHub](https://github
 devtools::install_github("NagelLabHub/pdrc")
 ```
 
-## Example
+## Quick example
+
+Example files with required format can be found in the [example](https://github.com/NagelLabHub/pdrc/tree/master/example) folder.
+
+Performing standardization and batch-effect correction:
+
+``` r
+library(pdrc)
+# Import your data from Excel or CSV - see example data
+# standardization 
+list1 <- RE_to_zscore(dat1, c("var1", “var2”)) #generate a list of the standardized data and scaling metrics
+# batch correction using the ComBat approach
+dat2 <- batch_correction(dat1, pheno, covariate=c(“age”, “sex”), batch="batch")
+```
 
 Fitting Comet kinetics data with adaptive model selection:
 
 ``` r
 library(pdrc)
 # Import your data from Excel or CSV
-# Required columns: "Sample" and time point columns with prefix "c_" (e.g., "c_0", "c_15", "c_30", "c_60", "c_120")
+# Required columns (see example data): "Sample" and time point columns with prefix "c_" (e.g., "c_0", "c_15", "c_30", "c_60", "c_120")
 
 result_list <- loop_comet_data(data, method = "adaptive")
 summary_df <- comet_list_to_df(result_list, method = "adaptive")
 ```
-
-Example files with required format can be found in the [example](https://github.com/NagelLabHub/pdrc/tree/master/example) folder.
 
 ## To cite package 'pdrc' in publications use:
 
