@@ -58,6 +58,6 @@ result_list <- loop_comet_data(data, method = "adaptive")
 summary_df <- comet_list_to_df(result_list, method = "adaptive")
 ```
 
-## To cite package 'pdrc' in publications use:
+## Citation:
 
-Zhai T, Mazzucato P, Ricciardi C, Christiani DC, Liang L, Samson LD, Chaim IA, Nagel ZD. Comprehensive Measurement of Inter-Individual Variation in DNA Repair Capacity in Healthy Individuals. medRxiv. doi: [10.1101/2025.06.13.25329369](https://doi.org/10.1101/2025.06.13.25329369).
+Zhai T, Mazzucato P, Ricciardi C, et al. Comprehensive Measurement of Inter-Individual Variation in DNA Repair Capacity in Healthy Individuals. *Adv Sci (Weinh).* Published online October 7, 2025. [doi:10.1002/advs.202513893](https://doi.org/10.1002/advs.202513893)
